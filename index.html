@@ -195,7 +195,7 @@
                         <!-- Éditeur JSON -->
                         <div id="messageEditor" class="hidden">
                             <div class="relative w-full">
-                                <pre id="message" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm overflow-y-auto bg-white" contenteditable="true" spellcheck="false" style="min-height: 100px; max-height: 60vh;"><code class="hljs language-json"></code></pre>
+                                <pre id="message" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white" contenteditable="true" spellcheck="false" style="min-height: 100px;"><code class="hljs language-json"></code></pre>
                             </div>
                         </div>
                     </div>
@@ -944,8 +944,6 @@
             } else {
                 log('WebSocket not connected!');
             }
-            updateSocketName(`Add ${name}`);
-            adjustTextareaHeight();
         }
 
         function adjustTextareaHeight() {
@@ -1058,7 +1056,7 @@
         }
 
         function updateMessageContent(content) {
-            const messageElement = document.querySelector('#message code');
+            const messageElement = document.querySelector('#message');
             const previewElement = document.getElementById('messagePreview');
             const editor = document.getElementById('messageEditor');
             const chevron = document.querySelector('.group.cursor-pointer .fa-chevron-down');
@@ -1067,18 +1065,19 @@
                 const jsonObj = content ? JSON.parse(content) : null;
                 
                 if (!content || content.trim() === '') {
-                    // Si pas de contenu, afficher l'éditeur
                     editor.classList.remove('hidden');
                     chevron.style.transform = 'rotate(180deg)';
-                    messageElement.innerHTML = '';
+                    messageElement.querySelector('code').innerHTML = '';
                     previewElement.textContent = 'Aucun message';
                 } else {
-                    // Si contenu, cacher l'éditeur et mettre à jour l'aperçu
-                    editor.classList.add('hidden');
-                    chevron.style.transform = 'rotate(0)';
                     const formattedJson = JSON.stringify(jsonObj, null, 2);
                     const highlighted = hljs.highlight(formattedJson, {language: 'json'}).value;
-                    messageElement.innerHTML = highlighted;
+                    messageElement.querySelector('code').innerHTML = highlighted;
+                    
+                    // Adapter la hauteur au contenu complet
+                    messageElement.style.height = 'auto';
+                    messageElement.style.minHeight = '100px';
+                    messageElement.style.maxHeight = 'none';
                     
                     // Mettre à jour l'aperçu
                     let preview = 'Message JSON';
@@ -1103,10 +1102,9 @@
                     previewElement.textContent = preview;
                 }
             } catch (e) {
-                // En cas d'erreur, afficher l'éditeur
                 editor.classList.remove('hidden');
                 chevron.style.transform = 'rotate(180deg)';
-                messageElement.textContent = content || '';
+                messageElement.querySelector('code').textContent = content || '';
                 previewElement.textContent = content || 'Aucun message';
             }
         }
