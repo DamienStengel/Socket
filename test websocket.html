@@ -6,6 +6,7 @@
     <title>Touch Chef WebSocket Tester</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css">
     <style>
         /* Styles pour le mode sombre */
         .dark body {
@@ -31,6 +32,21 @@
         
         .dark .bg-gray-100 {
             background-color: #1a1a1a;
+        }
+        
+        /* Ajustements pour le JSON formaté */
+        .hljs {
+            background: transparent !important;
+            padding: 0 !important;
+        }
+        
+        /* Style pour le mode sombre */
+        .dark .hljs {
+            color: #e5e5e5;
+        }
+        
+        .dark pre {
+            background-color: #2d2d2d;
         }
     </style>
 </head>
@@ -262,6 +278,8 @@
         </main>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
     <script>
         let ws;
         
@@ -413,6 +431,7 @@
             let typeLabel = '';
             let direction = '';
             let borderColor = 'border-gray-500';
+            let messageDescription = '';
             
             try {
                 if (message.startsWith('Sent:') || message.startsWith('Received:')) {
@@ -420,27 +439,37 @@
                     const jsonStr = message.substring(message.indexOf('{'));
                     const data = JSON.parse(jsonStr);
                     
-                    // Déterminer la couleur selon le type
+                    // Déterminer la couleur et le type selon le type de message
                     switch(data.type) {
                         case 'add_product':
                             borderColor = 'border-yellow-500';
                             typeLabel = '<span class="text-yellow-600 font-semibold">[Ingrédient]</span>';
+                            messageDescription = `${data.product.icon} ${data.product.name}`;
                             break;
                         case 'activeTask':
                             borderColor = 'border-blue-500';
                             typeLabel = '<span class="text-blue-600 font-semibold">[Tâche]</span>';
+                            const workstation = {
+                                'grill': '🔥 Cuisson',
+                                'cutting_board': '🔪 Découpe',
+                                'sink': '💧 Lavage'
+                            }[data.assignedTask.workstation] || data.assignedTask.workstation;
+                            messageDescription = `${workstation} × ${data.assignedTask.quantity} pour ${data.assignedTask.cook.name}`;
                             break;
                         case 'unactiveTask':
                             borderColor = 'border-red-500';
                             typeLabel = '<span class="text-red-600 font-semibold">[Désactivation]</span>';
+                            messageDescription = 'Arrêt de la tâche';
                             break;
                         case 'startGame':
                             borderColor = 'border-purple-500';
                             typeLabel = '<span class="text-purple-600 font-semibold">[Start Game]</span>';
+                            messageDescription = 'Démarrage de la partie';
                             break;
                         case 'taskProgress':
                             borderColor = 'border-green-500';
                             typeLabel = '<span class="text-green-600 font-semibold">[Progression]</span>';
+                            messageDescription = `${data.progressData.taskName}: ${data.progressData.currentProgress}/${data.progressData.targetProgress}`;
                             break;
                     }
                     
@@ -451,7 +480,12 @@
                             'angular': '<i class="fas fa-tablet-alt text-red-500"></i>'
                         };
                         
-                        // Si ce n'est pas "table" ou "angular", c'est une montre
+                        const getDeviceName = (id) => {
+                            if (id === 'table') return 'Unity';
+                            if (id === 'angular') return 'Tablette';
+                            return id.includes('SM-R870') ? `Montre ${id.split('-').pop().slice(0, 4)}...` : id;
+                        };
+                        
                         const fromIcon = data.from === 'table' || data.from === 'angular' 
                             ? deviceIcons[data.from] 
                             : '<i class="fas fa-watch text-blue-500"></i>';
@@ -462,39 +496,50 @@
                         
                         direction = `
                             <div class="flex items-center gap-2 text-sm">
-                                ${fromIcon}
+                                <span class="flex items-center gap-1">
+                                    ${fromIcon}
+                                    <span class="text-xs text-gray-600">${getDeviceName(data.from)}</span>
+                                </span>
                                 <i class="fas fa-arrow-right text-gray-400"></i>
-                                ${toIcon}
+                                <span class="flex items-center gap-1">
+                                    ${toIcon}
+                                    <span class="text-xs text-gray-600">${getDeviceName(data.to)}</span>
+                                </span>
                             </div>
                         `;
                         
-                        // Détecter les nouvelles montres
                         if (data.from !== 'table' && data.from !== 'angular' && !knownWatches.has(data.from)) {
                             knownWatches.add(data.from);
                             addNewWatchFilter(data.from);
                         }
                     }
+                } else {
+                    typeLabel = '<span class="text-gray-600 font-semibold">[System]</span>';
+                    messageDescription = message;
                 }
             } catch (e) {
                 typeLabel = '<span class="text-gray-600 font-semibold">[System]</span>';
+                messageDescription = message;
             }
             
             logEntry.classList.add('border-l-4', borderColor);
             
+            // Modifier la partie HTML du log
             logEntry.innerHTML = `
-                <div class="flex items-center justify-between mb-1">
-                    <div class="flex items-center gap-3">
-                        <span class="text-gray-500 text-xs">${timestamp}</span>
-                        ${typeLabel}
-                        ${direction}
+                <div class="group cursor-pointer" onclick="toggleJsonView(this)">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-3">
+                            <span class="text-gray-500 text-xs">${timestamp}</span>
+                            ${typeLabel}
+                            ${direction}
+                        </div>
+                        <i class="fas fa-chevron-down text-gray-400 group-hover:text-gray-600 transition-transform duration-200"></i>
                     </div>
-                    <button onclick="copyToClipboard(this.parentElement.nextElementSibling)" 
-                        class="text-xs text-gray-400 hover:text-gray-600 ml-2" 
-                        title="Copier le message">
-                        <i class="fas fa-copy"></i>
-                    </button>
+                    <div class="text-sm font-medium text-gray-700 mb-1">${messageDescription}</div>
+                    <div class="mt-1 text-sm font-mono break-words hidden bg-gray-50 p-2 rounded overflow-x-auto">
+                        <pre class="whitespace-pre"><code class="hljs language-json">${formatJsonString(message)}</code></pre>
+                    </div>
                 </div>
-                <div class="mt-1 text-sm font-mono break-all">${message}</div>
             `;
             
             logDiv.appendChild(logEntry);
@@ -858,7 +903,7 @@
                     // Vérifier le type de message
                     if (!activeFilters.types.has(data.type)) return false;
                     
-                    // Vérifier les appareils impliqués
+                    // Vrifier les appareils impliqués
                     if (data.from || data.to) {
                         const devices = new Set();
                         // Si ce n'est ni "table" ni "angular", c'est une montre
@@ -901,6 +946,48 @@
                 checkbox.addEventListener('change', updateFilters);
             });
         });
+
+        // Modifier la fonction toggleJsonView
+        function toggleJsonView(element) {
+            const jsonDiv = element.querySelector('.font-mono');
+            const chevron = element.querySelector('.fa-chevron-down');
+            const isHidden = jsonDiv.classList.contains('hidden');
+            
+            jsonDiv.classList.toggle('hidden');
+            
+            // Rotation du chevron
+            if (isHidden) {
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                chevron.style.transform = 'rotate(0)';
+            }
+        }
+
+        function formatJsonString(jsonString) {
+            try {
+                // Extraire le JSON si le message commence par "Sent:" ou "Received:"
+                const actualJson = jsonString.startsWith('Sent:') || jsonString.startsWith('Received:')
+                    ? jsonString.substring(jsonString.indexOf('{'))
+                    : jsonString;
+
+                // Parser et reformater le JSON
+                const obj = JSON.parse(actualJson);
+                const formattedJson = JSON.stringify(obj, null, 2);
+                
+                // Appliquer la coloration syntaxique
+                const highlighted = hljs.highlight(formattedJson, {language: 'json'}).value;
+                
+                // Reconstruire le message complet si nécessaire
+                if (jsonString.startsWith('Sent:')) {
+                    return `Sent:\n${highlighted}`;
+                } else if (jsonString.startsWith('Received:')) {
+                    return `Received:\n${highlighted}`;
+                }
+                return highlighted;
+            } catch (e) {
+                return jsonString; // Retourner le texte original en cas d'erreur
+            }
+        }
     </script>
 </body>
 </html>
