@@ -177,7 +177,63 @@
 
                 <!-- Tab Créer une tâche -->
                 <div id="createTaskContent" class="hidden p-4 space-y-4">
-                    <!-- Contenu existant de createTaskContent -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Sélection du joueur -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Joueur</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="selectPlayer('Player1', '#FF6B6B')" class="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-colors">
+                                    <div class="w-8 h-8 rounded-full bg-red-500 mx-auto mb-1"></div>
+                                    Player 1
+                                </button>
+                                <button onclick="selectPlayer('Player2', '#4169E1')" class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors">
+                                    <div class="w-8 h-8 rounded-full bg-blue-500 mx-auto mb-1"></div>
+                                    Player 2
+                                </button>
+                                <button onclick="selectPlayer('Player3', '#FFD93D')" class="p-2 rounded-lg bg-yellow-100 hover:bg-yellow-200 transition-colors">
+                                    <div class="w-8 h-8 rounded-full bg-yellow-500 mx-auto mb-1"></div>
+                                    Player 3
+                                </button>
+                                <button onclick="selectPlayer('Player4', '#95E1D3')" class="p-2 rounded-lg bg-green-100 hover:bg-green-200 transition-colors">
+                                    <div class="w-8 h-8 rounded-full bg-green-500 mx-auto mb-1"></div>
+                                    Player 4
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sélection de la quantité -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Quantité</label>
+                            <input type="number" id="taskQuantity" min="1" max="5" value="1" 
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <!-- Sélection de la workstation -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Workstation</label>
+                            <select id="workstation" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                <option value="grill">Grill</option>
+                                <option value="cutting_board">Cutting Board</option>
+                                <option value="evier">Évier</option>
+                            </select>
+                        </div>
+
+                        <!-- Sélection de l'ingrédient -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Ingrédient</label>
+                            <select id="ingredient" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                <option value="1">Tomate 🍅</option>
+                                <option value="2">Laitue 🥬</option>
+                                <option value="3">Viande 🥩</option>
+                                <option value="4">Pain 🫓</option>
+                                <option value="5">Fromage 🧀</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="createCustomTask()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                        <i class="fas fa-plus mr-2"></i>Créer la tâche
+                    </button>
                 </div>
             </section>
             
@@ -614,19 +670,27 @@
         let selectedPlayerColor = null;
 
         function switchTab(tabName) {
-            // Cacher tous les contenus
-            document.getElementById('quickActionsContent').classList.add('hidden');
-            document.getElementById('tasksContent').classList.add('hidden');
-            document.getElementById('createTaskContent').classList.add('hidden');
+            const tasksContent = document.getElementById('tasksContent');
+            const createTaskContent = document.getElementById('createTaskContent');
+            const tasksTab = document.getElementById('tasksTab');
+            const createTaskTab = document.getElementById('createTaskTab');
             
-            // Réinitialiser tous les tabs
-            document.getElementById('quickActionsTab').classList.remove('text-blue-600', 'border-blue-600');
-            document.getElementById('tasksTab').classList.remove('text-blue-600', 'border-blue-600');
-            document.getElementById('createTaskTab').classList.remove('text-blue-600', 'border-blue-600');
+            // Réinitialiser tous les contenus et tabs
+            [tasksContent, createTaskContent].forEach(content => {
+                if (content) content.classList.add('hidden');
+            });
+            [tasksTab, createTaskTab].forEach(tab => {
+                if (tab) tab.classList.remove('text-blue-600', 'border-blue-600');
+            });
             
-            // Afficher le contenu sélectionné
-            document.getElementById(tabName + 'Content').classList.remove('hidden');
-            document.getElementById(tabName + 'Tab').classList.add('text-blue-600', 'border-blue-600');
+            // Activer le tab sélectionné
+            const selectedContent = document.getElementById(tabName + 'Content');
+            const selectedTab = document.getElementById(tabName + 'Tab');
+            
+            if (selectedContent && selectedTab) {
+                selectedContent.classList.remove('hidden');
+                selectedTab.classList.add('text-blue-600', 'border-blue-600');
+            }
         }
 
         function selectPlayer(playerName, color) {
@@ -671,41 +735,51 @@
             updateSocketName('Custom Task');
         }
 
-        // Modifier l'initialisation dans le DOMContentLoaded
+        // Modifier l'initialisation
         document.addEventListener('DOMContentLoaded', () => {
-            // ... code existant ...
+            // Initialiser la coloration syntaxique
+            const messageElement = document.querySelector('#message');
+            if (messageElement) {
+                messageElement.addEventListener('input', () => {
+                    const codeElement = messageElement.querySelector('code');
+                    try {
+                        const content = codeElement.textContent;
+                        const jsonObj = JSON.parse(content);
+                        const formattedJson = JSON.stringify(jsonObj, null, 2);
+                        const highlighted = hljs.highlight(formattedJson, {language: 'json'}).value;
+                        codeElement.innerHTML = highlighted;
+                        
+                        // Maintenir le curseur à la bonne position
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(codeElement);
+                        range.collapse(false);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    } catch (e) {
+                        // Si ce n'est pas du JSON valide, ne pas formater
+                    }
+                });
+            }
             
             // Déplier l'éditeur au chargement
             const editor = document.getElementById('messageEditor');
             const chevron = document.querySelector('.group.cursor-pointer .fa-chevron-down');
-            editor.classList.remove('hidden');
-            chevron.style.transform = 'rotate(180deg)';
+            if (editor && chevron) {
+                editor.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            }
             
-            // Initialiser la coloration syntaxique
-            const messageElement = document.querySelector('#message');
-            messageElement.addEventListener('input', () => {
-                const codeElement = messageElement.querySelector('code');
-                try {
-                    const content = codeElement.textContent;
-                    const jsonObj = JSON.parse(content);
-                    const formattedJson = JSON.stringify(jsonObj, null, 2);
-                    const highlighted = hljs.highlight(formattedJson, {language: 'json'}).value;
-                    codeElement.innerHTML = highlighted;
-                    
-                    // Maintenir le curseur à la bonne position
-                    const selection = window.getSelection();
-                    const range = document.createRange();
-                    range.selectNodeContents(codeElement);
-                    range.collapse(false);
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                } catch (e) {
-                    // Si ce n'est pas du JSON valide, ne pas formater
-                }
-            });
-            
+            // Initialiser les autres éléments
             updateWorkstationOptions();
+            
+            // Initialiser le premier tab
             switchTab('tasks');
+            
+            // Ajouter les écouteurs pour les filtres
+            document.querySelectorAll('input[data-filter]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateFilters);
+            });
         });
 
         function startGameNow() {
