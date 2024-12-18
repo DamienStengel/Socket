@@ -301,11 +301,27 @@
             ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
+                    // Ne pas logger les messages de type heartrate
                     if (data.type !== "heartrate") {
-                        log('Received: ' + event.data);
+                        // Détecter les nouvelles montres dans les messages reçus
+                        if (data.from && data.from !== 'table' && data.from !== 'angular' && !knownWatches.has(data.from)) {
+                            knownWatches.add(data.from);
+                            addNewWatchFilter(data.from);
+                        }
+                        if (data.to && data.to !== 'table' && data.to !== 'angular' && !knownWatches.has(data.to)) {
+                            knownWatches.add(data.to);
+                            addNewWatchFilter(data.to);
+                        }
+                        
+                        // Formater le message reçu avant de le logger
+                        const formattedMessage = JSON.stringify(data, null, 2);
+                        log('Received: ' + formattedMessage);
                     }
                 } catch (error) {
-                    log('Error processing message: ' + error.message);
+                    // Si ce n'est pas du JSON valide, logger le message brut
+                    if (event.data !== "heartrate") {
+                        log('Received: ' + event.data);
+                    }
                 }
             };
             
