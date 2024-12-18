@@ -159,7 +159,7 @@
                 <div class="flex flex-col space-y-4">
                     <!-- En-tête avec titre et boutons -->
                     <div class="flex justify-between items-center">
-                        <h2 class="text-xl font-semibold text-gray-800">Message Sender</h2>
+                        <h2 class="text-xl font-semibold text-gray-800">Envoi de messages</h2>
                         <div class="flex gap-2">
                             <button onclick="clearMessage()" 
                                 class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
@@ -277,21 +277,21 @@
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700">Joueur</label>
                             <div class="grid grid-cols-2 gap-2">
-                                <button onclick="selectPlayer('Player1', '#FF6B6B')" class="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-colors">
+                                <button onclick="selectPlayer('Joueur1', '#FF6B6B')" class="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-colors">
                                     <div class="w-8 h-8 rounded-full bg-red-500 mx-auto mb-1"></div>
-                                    Player 1
+                                    Joueur 1
                                 </button>
-                                <button onclick="selectPlayer('Player2', '#4169E1')" class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors">
+                                <button onclick="selectPlayer('Joueur2', '#4169E1')" class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors">
                                     <div class="w-8 h-8 rounded-full bg-blue-500 mx-auto mb-1"></div>
-                                    Player 2
+                                    Joueur 2
                                 </button>
-                                <button onclick="selectPlayer('Player3', '#FFD93D')" class="p-2 rounded-lg bg-yellow-100 hover:bg-yellow-200 transition-colors">
+                                <button onclick="selectPlayer('Joueur3', '#FFD93D')" class="p-2 rounded-lg bg-yellow-100 hover:bg-yellow-200 transition-colors">
                                     <div class="w-8 h-8 rounded-full bg-yellow-500 mx-auto mb-1"></div>
-                                    Player 3
+                                    Joueur 3
                                 </button>
-                                <button onclick="selectPlayer('Player4', '#95E1D3')" class="p-2 rounded-lg bg-green-100 hover:bg-green-200 transition-colors">
+                                <button onclick="selectPlayer('Joueur4', '#95E1D3')" class="p-2 rounded-lg bg-green-100 hover:bg-green-200 transition-colors">
                                     <div class="w-8 h-8 rounded-full bg-green-500 mx-auto mb-1"></div>
-                                    Player 4
+                                    Joueur 4
                                 </button>
                             </div>
                         </div>
@@ -340,9 +340,12 @@
                             class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
                             title="Effacer les logs (Ctrl/Cmd + L)">
                             <i class="fas fa-eraser"></i>
-                            <span>Clear</span>
+                            <span>Effacer</span>
                         </button>
-                        <span id="ws-status" class="px-2 py-1 rounded text-sm font-semibold">Déconnecté</span>
+                        <span id="ws-status" class="px-2 py-1 rounded text-sm font-semibold flex items-center gap-2">
+                            <span class="text">Déconnecté</span>
+                            <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                        </span>
                     </div>
                 </div>
 
@@ -603,6 +606,13 @@
         
         function log(message) {
             const logDiv = document.getElementById('log');
+            
+            // Supprimer le message "Aucun message" s'il existe
+            const noMessagesElement = logDiv.querySelector('.no-messages');
+            if (noMessagesElement) {
+                logDiv.removeChild(noMessagesElement);
+            }
+            
             const wasAtBottom = isNearBottom(logDiv);
             const logEntry = document.createElement('div');
             const timestamp = new Date().toLocaleTimeString();
@@ -747,8 +757,18 @@
                 'Error': 'Erreur'
             };
             const statusElement = document.getElementById('ws-status');
-            statusElement.textContent = statusMap[status] || status;
-            statusElement.className = className;
+            const textElement = statusElement.querySelector('.text');
+            const dotElement = statusElement.querySelector('.rounded-full');
+            
+            textElement.textContent = statusMap[status] || status;
+            
+            // Mettre à jour la couleur du point
+            dotElement.className = 'w-2 h-2 rounded-full';
+            if (status === 'Connected') {
+                dotElement.classList.add('bg-green-500');
+            } else {
+                dotElement.classList.add('bg-red-500');
+            }
         }
         
         // Initial connection
@@ -938,6 +958,11 @@
             document.querySelectorAll('input[data-filter]').forEach(checkbox => {
                 checkbox.addEventListener('change', updateFilters);
             });
+            
+            // Afficher le message initial s'il n'y a pas de messages
+            if (!hasMessages()) {
+                showNoMessagesPlaceholder();
+            }
         });
 
         function startGameNow() {
@@ -1449,8 +1474,21 @@
         // Ajouter la fonction clearLogs
         function clearLogs() {
             const logDiv = document.getElementById('log');
-            logDiv.innerHTML = '';
-            updateScrollButton(); // Mettre à jour l'état du bouton de scroll
+            showNoMessagesPlaceholder();
+            updateScrollButton();
+        }
+
+        // Ajouter cette nouvelle fonction
+        function showNoMessagesPlaceholder() {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML = `
+                <div class="no-messages flex items-center justify-center h-full text-gray-500">
+                    <div class="text-center">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>Aucun message pour le moment</p>
+                    </div>
+                </div>
+            `;
         }
 
         // Ajouter ces nouvelles fonctions
@@ -1529,6 +1567,12 @@
             };
             
             icon.className = `${iconClass} ${iconColors[select.value]}`;
+        }
+
+        // Ajouter cette fonction pour vérifier s'il y a des messages
+        function hasMessages() {
+            const logDiv = document.getElementById('log');
+            return logDiv.children.length > 0 && !logDiv.children[0].classList.contains('no-messages');
         }
     </script>
 </body>
