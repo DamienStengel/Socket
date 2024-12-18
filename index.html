@@ -61,29 +61,49 @@
         
         <main class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <section class="bg-white rounded-lg shadow-md p-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">Message Sender</h2>
-                    <div class="flex gap-3">
-                        <button onclick="clearMessage()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold px-4 py-3 rounded-lg transition duration-300 shadow-lg transform hover:scale-105 text-lg">
-                            <i class="fas fa-eraser mr-2"></i>Clear
-                        </button>
-                        <button onclick="sendMessage()" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg transition duration-300 shadow-lg transform hover:scale-105 text-lg" 
-                            title="Envoyer le message (Ctrl/Cmd + Enter)">
-                            <i class="fas fa-paper-plane mr-2"></i>Send
-                        </button>
+                <div class="flex flex-col space-y-4">
+                    <!-- En-tête avec titre et boutons -->
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-semibold text-gray-800">Message Sender</h2>
+                        <div class="flex gap-2">
+                            <button onclick="clearMessage()" 
+                                class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                                title="Effacer (Ctrl/Cmd + Backspace)">
+                                <i class="fas fa-eraser"></i>
+                                <span>Clear</span>
+                            </button>
+                            <button onclick="sendMessage()" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                                title="Envoyer (Ctrl/Cmd + Enter)">
+                                <i class="fas fa-paper-plane"></i>
+                                <span>Send</span>
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <div class="space-y-2">
-                    <div id="message-container" class="relative w-full">
-                        <pre id="message" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm overflow-y-auto" contenteditable="true" spellcheck="false" style="min-height: 100px; max-height: 60vh;"><code class="hljs language-json"></code></pre>
+                    <!-- Zone de message avec aperçu et JSON -->
+                    <div class="space-y-2">
+                        <!-- Aperçu du message -->
+                        <div class="group cursor-pointer bg-gray-50 p-3 rounded-lg" onclick="toggleMessageEditor(this)">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span id="socketType" class="hidden px-2 py-1 bg-blue-50 text-blue-600 rounded text-sm font-medium">
+                                        <i class="fas fa-plug mr-2"></i>
+                                        <span id="socketName">Aucun</span>
+                                    </span>
+                                    <span class="text-sm text-gray-500" id="messagePreview">Aucun message</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-gray-400 group-hover:text-gray-600 transition-transform duration-200"></i>
+                            </div>
+                        </div>
+
+                        <!-- Éditeur JSON -->
+                        <div id="messageEditor" class="hidden">
+                            <div class="relative w-full">
+                                <pre id="message" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm overflow-y-auto bg-white" contenteditable="true" spellcheck="false" style="min-height: 100px; max-height: 60vh;"><code class="hljs language-json"></code></pre>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <span id="socketType" class="hidden px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm font-medium inline-flex items-center">
-                        <i class="fas fa-plug mr-2"></i>
-                        Socket actuel : <span id="socketName" class="ml-1 font-semibold">Aucun</span>
-                    </span>
                 </div>
 
                 <!-- Tabs de navigation -->
@@ -651,25 +671,41 @@
             updateSocketName('Custom Task');
         }
 
-        // Initialiser le premier tab
+        // Modifier l'initialisation dans le DOMContentLoaded
         document.addEventListener('DOMContentLoaded', () => {
-            const textarea = document.getElementById('message');
+            // ... code existant ...
             
-            // Ajuster la hauteur lors de la saisie
-            textarea.addEventListener('input', () => {
-                adjustTextareaHeight();
-                // Si l'utilisateur modifie le contenu, on met à jour le nom du socket
-                if (textarea.value.trim() === '') {
-                    updateSocketName('Aucun');
-                } else {
-                    updateSocketName('Socket personnalisé');
+            // Déplier l'éditeur au chargement
+            const editor = document.getElementById('messageEditor');
+            const chevron = document.querySelector('.group.cursor-pointer .fa-chevron-down');
+            editor.classList.remove('hidden');
+            chevron.style.transform = 'rotate(180deg)';
+            
+            // Initialiser la coloration syntaxique
+            const messageElement = document.querySelector('#message');
+            messageElement.addEventListener('input', () => {
+                const codeElement = messageElement.querySelector('code');
+                try {
+                    const content = codeElement.textContent;
+                    const jsonObj = JSON.parse(content);
+                    const formattedJson = JSON.stringify(jsonObj, null, 2);
+                    const highlighted = hljs.highlight(formattedJson, {language: 'json'}).value;
+                    codeElement.innerHTML = highlighted;
+                    
+                    // Maintenir le curseur à la bonne position
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(codeElement);
+                    range.collapse(false);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } catch (e) {
+                    // Si ce n'est pas du JSON valide, ne pas formater
                 }
             });
             
-            // Ajuster la hauteur lors du redimensionnement de la fenêtre
-            window.addEventListener('resize', adjustTextareaHeight);
-            
-            switchTab('quickActions');
+            updateWorkstationOptions();
+            switchTab('tasks');
         });
 
         function startGameNow() {
@@ -718,8 +754,15 @@
         }
 
         function clearMessage() {
+            const editor = document.getElementById('messageEditor');
+            const chevron = document.querySelector('.group.cursor-pointer .fa-chevron-down');
+            
             updateMessageContent('');
             updateSocketName('Aucun');
+            
+            // Afficher l'éditeur quand on efface
+            editor.classList.remove('hidden');
+            chevron.style.transform = 'rotate(180deg)';
         }
 
         function updateSocketName(name) {
@@ -740,6 +783,10 @@
             // Ctrl/Cmd + L pour effacer le log
             if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
                 document.getElementById('log').innerHTML = '';
+            }
+            // Ctrl/Cmd + Backspace pour effacer
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Backspace') {
+                clearMessage();
             }
         });
 
@@ -804,13 +851,52 @@
 
         function updateMessageContent(content) {
             const messageElement = document.querySelector('#message code');
+            const previewElement = document.getElementById('messagePreview');
+            const editor = document.getElementById('messageEditor');
+            const chevron = document.querySelector('.group.cursor-pointer .fa-chevron-down');
+            
             try {
-                const jsonObj = JSON.parse(content);
-                const formattedJson = JSON.stringify(jsonObj, null, 2);
-                const highlighted = hljs.highlight(formattedJson, {language: 'json'}).value;
-                messageElement.innerHTML = highlighted;
+                const jsonObj = content ? JSON.parse(content) : null;
+                
+                if (!content || content.trim() === '') {
+                    // Si pas de contenu, afficher l'éditeur
+                    editor.classList.remove('hidden');
+                    chevron.style.transform = 'rotate(180deg)';
+                    messageElement.innerHTML = '';
+                    previewElement.textContent = 'Aucun message';
+                } else {
+                    // Si contenu, cacher l'éditeur et mettre à jour l'aperçu
+                    editor.classList.add('hidden');
+                    chevron.style.transform = 'rotate(0)';
+                    const formattedJson = JSON.stringify(jsonObj, null, 2);
+                    const highlighted = hljs.highlight(formattedJson, {language: 'json'}).value;
+                    messageElement.innerHTML = highlighted;
+                    
+                    // Mettre à jour l'aperçu
+                    let preview = 'Message JSON';
+                    if (jsonObj.type) {
+                        switch(jsonObj.type) {
+                            case 'activeTask':
+                                preview = `Tâche: ${jsonObj.assignedTask.workstation} × ${jsonObj.assignedTask.quantity}`;
+                                break;
+                            case 'add_product':
+                                preview = `Ingrédient: ${jsonObj.product.icon} ${jsonObj.product.name}`;
+                                break;
+                            case 'startGame':
+                                preview = 'Démarrer la partie';
+                                break;
+                            default:
+                                preview = `Type: ${jsonObj.type}`;
+                        }
+                    }
+                    previewElement.textContent = preview;
+                }
             } catch (e) {
-                messageElement.textContent = content;
+                // En cas d'erreur, afficher l'éditeur
+                editor.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+                messageElement.textContent = content || '';
+                previewElement.textContent = content || 'Aucun message';
             }
         }
 
@@ -999,6 +1085,21 @@
             
             updateWorkstationOptions();
         });
+
+        // Ajouter ces nouvelles fonctions
+        function toggleMessageEditor(element) {
+            const editor = document.getElementById('messageEditor');
+            const chevron = element.querySelector('.fa-chevron-down');
+            const isHidden = editor.classList.contains('hidden');
+            
+            editor.classList.toggle('hidden');
+            
+            if (isHidden) {
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                chevron.style.transform = 'rotate(0)';
+            }
+        }
     </script>
 </body>
 </html>
