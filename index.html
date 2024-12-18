@@ -165,13 +165,13 @@
                                 class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
                                 title="Effacer (Ctrl/Cmd + Backspace)">
                                 <i class="fas fa-eraser"></i>
-                                <span>Clear</span>
+                                <span>Effacer</span>
                             </button>
                             <button onclick="sendMessage()" 
                                 class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
                                 title="Envoyer (Ctrl/Cmd + Enter)">
                                 <i class="fas fa-paper-plane"></i>
-                                <span>Send</span>
+                                <span>Envoyer</span>
                             </button>
                         </div>
                     </div>
@@ -308,7 +308,7 @@
                             <label class="block text-sm font-medium text-gray-700">Workstation</label>
                             <select id="workstation" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
                                 <option value="grill">Grill</option>
-                                <option value="cutting_board">Cutting Board</option>
+                                <option value="cutting_board">Planche à découper</option>
                                 <option value="evier">Évier</option>
                             </select>
                         </div>
@@ -348,7 +348,7 @@
                             title="Filtrer les messages">
                             <i class="fas fa-filter"></i>
                         </button>
-                        <span id="ws-status" class="px-2 py-1 rounded text-sm font-semibold">Disconnected</span>
+                        <span id="ws-status" class="px-2 py-1 rounded text-sm font-semibold">Déconnecté</span>
                     </div>
                 </div>
 
@@ -367,10 +367,10 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-1">De</label>
                                     <div class="relative">
                                         <select id="fromFilter" class="w-full pl-9 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white appearance-none" onchange="applyFilters()">
-                                            <option value="all" data-icon="fas fa-laptop">Tous les appareils</option>
-                                            <option value="watch" data-icon="fas fa-stopwatch">Montres</option>
-                                            <option value="unity" data-icon="fas fa-gamepad">Unity</option>
-                                            <option value="angular" data-icon="fas fa-tablet-alt">Tablette</option>
+                                            <option value="all">Tous les appareils</option>
+                                            <option value="watch">Montres</option>
+                                            <option value="unity">Table tactile</option>
+                                            <option value="angular">Tablette</option>
                                         </select>
                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                             <i id="fromIcon" class="fas fa-laptop"></i>
@@ -384,10 +384,10 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Vers</label>
                                     <div class="relative">
                                         <select id="toFilter" class="w-full pl-9 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white appearance-none" onchange="applyFilters()">
-                                            <option value="all" data-icon="fas fa-laptop">Tous les appareils</option>
-                                            <option value="watch" data-icon="fas fa-stopwatch">Montres</option>
-                                            <option value="unity" data-icon="fas fa-gamepad">Unity</option>
-                                            <option value="angular" data-icon="fas fa-tablet-alt">Tablette</option>
+                                            <option value="all">Tous les appareils</option>
+                                            <option value="watch">Montres</option>
+                                            <option value="unity">Table tactile</option>
+                                            <option value="angular">Tablette</option>
                                         </select>
                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                             <i id="toIcon" class="fas fa-laptop"></i>
@@ -721,8 +721,13 @@
         }
         
         function updateStatus(status, className) {
+            const statusMap = {
+                'Connected': 'Connecté',
+                'Disconnected': 'Déconnecté',
+                'Error': 'Erreur'
+            };
             const statusElement = document.getElementById('ws-status');
-            statusElement.textContent = status;
+            statusElement.textContent = statusMap[status] || status;
             statusElement.className = className;
         }
         
@@ -1304,7 +1309,7 @@
             const workstationSelect = document.getElementById('workstation');
             workstationSelect.innerHTML = `
                 <option value="grill">Grill</option>
-                <option value="cutting_board">Cutting Board</option>
+                <option value="cutting_board">Planche à découper</option>
                 <option value="evier">Évier</option>
             `;
         }
@@ -1451,6 +1456,11 @@
                 icon.className = `${iconClass} ${iconColors[select.value]}`;
             });
         }
+
+        // Ajouter l'écouteur d'événements pour l'input JSON
+        document.querySelector('#message').addEventListener('input', () => {
+            updateSocketName('Socket personnalisé');
+        });
     </script>
 </body>
 </html>
