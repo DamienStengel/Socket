@@ -367,10 +367,10 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-1">De</label>
                                     <div class="relative">
                                         <select id="fromFilter" class="w-full pl-9 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white appearance-none" onchange="applyFilters()">
-                                            <option value="all">Tous les appareils</option>
-                                            <option value="watch">Montres</option>
-                                            <option value="unity">Table tactile</option>
-                                            <option value="angular">Tablette</option>
+                                            <option value="all" data-icon="fas fa-laptop">Tous les appareils</option>
+                                            <option value="watch" data-icon="fas fa-stopwatch">Montres</option>
+                                            <option value="unity" data-icon="fas fa-gamepad">Table tactile</option>
+                                            <option value="angular" data-icon="fas fa-tablet-alt">Tablette</option>
                                         </select>
                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                             <i id="fromIcon" class="fas fa-laptop"></i>
@@ -380,14 +380,22 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Bouton de permutation -->
+                                <button onclick="switchFilters()" 
+                                    class="mt-6 p-2 rounded-full hover:bg-gray-100 transition-all transform hover:scale-110" 
+                                    title="Permuter les filtres">
+                                    <i class="fas fa-exchange-alt text-gray-500"></i>
+                                </button>
+
                                 <div class="flex-1">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Vers</label>
                                     <div class="relative">
                                         <select id="toFilter" class="w-full pl-9 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white appearance-none" onchange="applyFilters()">
-                                            <option value="all">Tous les appareils</option>
-                                            <option value="watch">Montres</option>
-                                            <option value="unity">Table tactile</option>
-                                            <option value="angular">Tablette</option>
+                                            <option value="all" data-icon="fas fa-laptop">Tous les appareils</option>
+                                            <option value="watch" data-icon="fas fa-stopwatch">Montres</option>
+                                            <option value="unity" data-icon="fas fa-gamepad">Table tactile</option>
+                                            <option value="angular" data-icon="fas fa-tablet-alt">Tablette</option>
                                         </select>
                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                             <i id="toIcon" class="fas fa-laptop"></i>
@@ -1461,6 +1469,31 @@
         document.querySelector('#message').addEventListener('input', () => {
             updateSocketName('Socket personnalisé');
         });
+
+        // Ajouter la fonction de permutation des filtres
+        function switchFilters() {
+            const fromFilter = document.getElementById('fromFilter');
+            const toFilter = document.getElementById('toFilter');
+            
+            // Sauvegarder les valeurs actuelles
+            const fromValue = fromFilter.value;
+            const toValue = toFilter.value;
+            
+            // Permuter les valeurs
+            fromFilter.value = toValue;
+            toFilter.value = fromValue;
+            
+            // Mettre à jour les icônes et appliquer les filtres
+            updateFilterIcons();
+            applyFilters();
+            
+            // Ajouter une animation de rotation au bouton
+            const button = event.currentTarget;
+            button.style.transform = 'scale(1.1) rotate(180deg)';
+            setTimeout(() => {
+                button.style.transform = 'scale(1) rotate(180deg)';
+            }, 200);
+        }
     </script>
 </body>
 </html>
