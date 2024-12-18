@@ -191,8 +191,70 @@
             <section class="bg-white rounded-lg shadow-md p-4">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold text-gray-800">Message Log</h2>
-                    <span id="ws-status" class="px-2 py-1 rounded text-sm font-semibold">Disconnected</span>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <button id="filterButton" 
+                                onclick="toggleFilterPanel()" 
+                                class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                title="Filtrer les messages">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <span id="ws-status" class="px-2 py-1 rounded text-sm font-semibold">Disconnected</span>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Ajouter le panneau de filtres -->
+                <div id="filterPanel" class="hidden mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Filtres par appareil -->
+                        <div>
+                            <h3 class="text-sm font-semibold mb-2">Appareils</h3>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" checked class="form-checkbox text-blue-500" data-filter="device" value="watch">
+                                    <i class="fas fa-watch text-blue-500"></i> Montres
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" checked class="form-checkbox text-purple-500" data-filter="device" value="unity">
+                                    <i class="fas fa-gamepad text-purple-500"></i> Unity
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" checked class="form-checkbox text-red-500" data-filter="device" value="angular">
+                                    <i class="fas fa-tablet-alt text-red-500"></i> Angular
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Filtres par type de message -->
+                        <div>
+                            <h3 class="text-sm font-semibold mb-2">Types de messages</h3>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" checked class="form-checkbox text-yellow-500" data-filter="type" value="add_product">
+                                    <span class="text-yellow-600">Ingrédients</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" checked class="form-checkbox text-blue-500" data-filter="type" value="activeTask">
+                                    <span class="text-blue-600">Tâches</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" checked class="form-checkbox text-red-500" data-filter="type" value="unactiveTask">
+                                    <span class="text-red-600">Désactivation</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" checked class="form-checkbox text-purple-500" data-filter="type" value="startGame">
+                                    <span class="text-purple-600">Start Game</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" checked class="form-checkbox text-green-500" data-filter="type" value="taskProgress">
+                                    <span class="text-green-600">Progression</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="log" class="h-[calc(100vh-280px)] overflow-y-auto p-4 bg-gray-100 rounded-md text-sm">
                     <!-- Log messages will be inserted here -->
                 </div>
@@ -202,6 +264,13 @@
 
     <script>
         let ws;
+        
+        // Ajouter ces variables globales au début du script
+        let knownWatches = new Set();
+        let activeFilters = {
+            devices: new Set(['watch', 'unity', 'angular']),
+            types: new Set(['add_product', 'activeTask', 'unactiveTask', 'startGame', 'taskProgress'])
+        };
         
         function connect() {
             ws = new WebSocket('wss://websocket.chhilif.com/ws');
@@ -341,21 +410,91 @@
             
             logEntry.className = 'mb-2 p-2 bg-white rounded shadow hover:shadow-md transition-shadow';
             
-            // Différencier visuellement les messages envoyés et reçus
-            if (message.startsWith('Sent:')) {
-                logEntry.classList.add('border-l-4', 'border-blue-500');
-            } else if (message.startsWith('Received:')) {
-                logEntry.classList.add('border-l-4', 'border-green-500');
+            let typeLabel = '';
+            let direction = '';
+            let borderColor = 'border-gray-500';
+            
+            try {
+                if (message.startsWith('Sent:') || message.startsWith('Received:')) {
+                    const isReceived = message.startsWith('Received:');
+                    const jsonStr = message.substring(message.indexOf('{'));
+                    const data = JSON.parse(jsonStr);
+                    
+                    // Déterminer la couleur selon le type
+                    switch(data.type) {
+                        case 'add_product':
+                            borderColor = 'border-yellow-500';
+                            typeLabel = '<span class="text-yellow-600 font-semibold">[Ingrédient]</span>';
+                            break;
+                        case 'activeTask':
+                            borderColor = 'border-blue-500';
+                            typeLabel = '<span class="text-blue-600 font-semibold">[Tâche]</span>';
+                            break;
+                        case 'unactiveTask':
+                            borderColor = 'border-red-500';
+                            typeLabel = '<span class="text-red-600 font-semibold">[Désactivation]</span>';
+                            break;
+                        case 'startGame':
+                            borderColor = 'border-purple-500';
+                            typeLabel = '<span class="text-purple-600 font-semibold">[Start Game]</span>';
+                            break;
+                        case 'taskProgress':
+                            borderColor = 'border-green-500';
+                            typeLabel = '<span class="text-green-600 font-semibold">[Progression]</span>';
+                            break;
+                    }
+                    
+                    // Déterminer les icônes de direction
+                    if (data.from && data.to) {
+                        const deviceIcons = {
+                            'table': '<i class="fas fa-gamepad text-purple-500"></i>',
+                            'angular': '<i class="fas fa-tablet-alt text-red-500"></i>'
+                        };
+                        
+                        // Si ce n'est pas "table" ou "angular", c'est une montre
+                        const fromIcon = data.from === 'table' || data.from === 'angular' 
+                            ? deviceIcons[data.from] 
+                            : '<i class="fas fa-watch text-blue-500"></i>';
+                        
+                        const toIcon = data.to === 'table' || data.to === 'angular'
+                            ? deviceIcons[data.to]
+                            : '<i class="fas fa-watch text-blue-500"></i>';
+                        
+                        direction = `
+                            <div class="flex items-center gap-2 text-sm">
+                                ${fromIcon}
+                                <i class="fas fa-arrow-right text-gray-400"></i>
+                                ${toIcon}
+                            </div>
+                        `;
+                        
+                        // Détecter les nouvelles montres
+                        if (data.from !== 'table' && data.from !== 'angular' && !knownWatches.has(data.from)) {
+                            knownWatches.add(data.from);
+                            addNewWatchFilter(data.from);
+                        }
+                    }
+                }
+            } catch (e) {
+                typeLabel = '<span class="text-gray-600 font-semibold">[System]</span>';
             }
             
+            logEntry.classList.add('border-l-4', borderColor);
+            
             logEntry.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-500 text-xs">${timestamp}</span>
-                    <button onclick="copyToClipboard(this.parentElement.nextElementSibling)" class="text-xs text-gray-400 hover:text-gray-600">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center gap-3">
+                        <span class="text-gray-500 text-xs">${timestamp}</span>
+                        ${typeLabel}
+                        ${direction}
+                    </div>
+                    <button onclick="copyToClipboard(this.parentElement.nextElementSibling)" 
+                        class="text-xs text-gray-400 hover:text-gray-600 ml-2" 
+                        title="Copier le message">
                         <i class="fas fa-copy"></i>
                     </button>
                 </div>
-                <div class="mt-1 text-sm font-mono">${message}</div>
+                <div class="mt-1 text-sm font-mono break-all">${message}</div>
             `;
             
             logDiv.appendChild(logEntry);
@@ -671,6 +810,97 @@
         function getMessageContent() {
             return document.getElementById('message').value;
         }
+
+        // Ajouter ces nouvelles fonctions
+        function toggleFilterPanel() {
+            const panel = document.getElementById('filterPanel');
+            panel.classList.toggle('hidden');
+        }
+
+        function updateFilters() {
+            // Mettre à jour les filtres d'appareils
+            const deviceCheckboxes = document.querySelectorAll('input[data-filter="device"]');
+            activeFilters.devices.clear();
+            deviceCheckboxes.forEach(cb => {
+                if (cb.checked) activeFilters.devices.add(cb.value);
+            });
+
+            // Mettre à jour les filtres de types
+            const typeCheckboxes = document.querySelectorAll('input[data-filter="type"]');
+            activeFilters.types.clear();
+            typeCheckboxes.forEach(cb => {
+                if (cb.checked) activeFilters.types.add(cb.value);
+            });
+
+            // Appliquer les filtres aux messages existants
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const logEntries = document.querySelectorAll('#log > div');
+            logEntries.forEach(entry => {
+                try {
+                    const messageText = entry.querySelector('.font-mono').textContent;
+                    const isVisible = shouldShowMessage(messageText);
+                    entry.classList.toggle('hidden', !isVisible);
+                } catch (e) {
+                    // Ignorer les erreurs de parsing
+                }
+            });
+        }
+
+        function shouldShowMessage(message) {
+            try {
+                if (message.startsWith('Sent:') || message.startsWith('Received:')) {
+                    const jsonStr = message.substring(message.indexOf('{'));
+                    const data = JSON.parse(jsonStr);
+                    
+                    // Vérifier le type de message
+                    if (!activeFilters.types.has(data.type)) return false;
+                    
+                    // Vérifier les appareils impliqués
+                    if (data.from || data.to) {
+                        const devices = new Set();
+                        // Si ce n'est ni "table" ni "angular", c'est une montre
+                        if (data.from !== 'table' && data.from !== 'angular') devices.add('watch');
+                        if (data.from === 'table') devices.add('unity');
+                        if (data.from === 'angular') devices.add('angular');
+                        if (data.to !== 'table' && data.to !== 'angular') devices.add('watch');
+                        if (data.to === 'table') devices.add('unity');
+                        if (data.to === 'angular') devices.add('angular');
+                        
+                        return [...devices].some(device => activeFilters.devices.has(device));
+                    }
+                }
+                return true;
+            } catch (e) {
+                return true;
+            }
+        }
+
+        function addNewWatchFilter(watchId) {
+            const deviceFilters = document.querySelector('#filterPanel .space-y-2');
+            const label = document.createElement('label');
+            label.className = 'flex items-center gap-2';
+            label.innerHTML = `
+                <input type="checkbox" checked class="form-checkbox text-blue-500" data-filter="device" value="${watchId}">
+                <i class="fas fa-watch text-blue-500"></i> ${watchId}
+            `;
+            deviceFilters.appendChild(label);
+            
+            // Ajouter l'écouteur d'événements
+            label.querySelector('input').addEventListener('change', updateFilters);
+        }
+
+        // Ajouter les écouteurs d'événements pour les filtres
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... code existant ...
+            
+            // Ajouter les écouteurs pour les filtres
+            document.querySelectorAll('input[data-filter]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateFilters);
+            });
+        });
     </script>
 </body>
 </html>
