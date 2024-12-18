@@ -167,6 +167,12 @@
                                 <i class="fas fa-eraser"></i>
                                 <span>Effacer</span>
                             </button>
+                            <button onclick="pasteMessage()" 
+                                class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                                title="Coller (Ctrl/Cmd + V)">
+                                <i class="fas fa-paste"></i>
+                                <span>Coller</span>
+                            </button>
                             <button onclick="sendMessage()" 
                                 class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
                                 title="Envoyer (Ctrl/Cmd + Enter)">
@@ -715,22 +721,24 @@
             logEntry.classList.add('border-l-4', borderColor);
             
             logEntry.innerHTML = `
-                <div class="group cursor-pointer" onclick="toggleJsonView(this)">
-                    <div class="flex items-center justify-between mb-1">
-                        <div class="flex items-center gap-3">
-                            <span class="text-gray-500 text-xs">${timestamp}</span>
-                            ${typeLabel}
-                            ${direction}
+                <div class="group">
+                    <div class="cursor-pointer" onclick="toggleJsonView(this.parentElement)">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-3">
+                                <span class="text-gray-500 text-xs">${timestamp}</span>
+                                ${typeLabel}
+                                ${direction}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${directionIcon}
+                                <button onclick="event.stopPropagation(); copyLogMessage(this)" class="text-gray-400 hover:text-gray-600 transition-colors" title="Copier le message">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <i class="fas fa-chevron-down text-gray-400 group-hover:text-gray-600 transition-transform duration-200"></i>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            ${directionIcon}
-                            <button onclick="event.stopPropagation(); copyLogMessage(this)" class="text-gray-400 hover:text-gray-600 transition-colors" title="Copier le message">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                            <i class="fas fa-chevron-down text-gray-400 group-hover:text-gray-600 transition-transform duration-200"></i>
-                        </div>
+                        <div class="text-sm font-medium text-gray-700 mb-1">${messageDescription}</div>
                     </div>
-                    <div class="text-sm font-medium text-gray-700 mb-1">${messageDescription}</div>
                     <div class="mt-1 text-sm font-mono break-all hidden bg-gray-50 p-2 rounded">
                         <pre class="whitespace-pre"><code class="hljs language-json">${formatJsonString(message.replace('Sent: ', '').replace('Received: ', ''))}</code></pre>
                     </div>
@@ -1043,6 +1051,11 @@
             // Ctrl/Cmd + Backspace pour effacer
             if ((e.ctrlKey || e.metaKey) && e.key === 'Backspace') {
                 clearMessage();
+            }
+            // Ctrl/Cmd + V pour coller
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                e.preventDefault();
+                pasteMessage();
             }
         });
 
@@ -1573,6 +1586,23 @@
         function hasMessages() {
             const logDiv = document.getElementById('log');
             return logDiv.children.length > 0 && !logDiv.children[0].classList.contains('no-messages');
+        }
+
+        // Ajouter la fonction pasteMessage
+        async function pasteMessage() {
+            try {
+                const text = await navigator.clipboard.readText();
+                updateMessageContent(text);
+                updateSocketName('Socket personnalisé');
+                
+                // Déplier l'éditeur si nécessaire
+                const editor = document.getElementById('messageEditor');
+                const chevron = document.querySelector('.group.cursor-pointer .fa-chevron-down');
+                editor.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            } catch (err) {
+                console.error('Erreur lors de la lecture du presse-papiers:', err);
+            }
         }
     </script>
 </body>
