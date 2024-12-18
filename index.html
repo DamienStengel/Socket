@@ -342,12 +342,6 @@
                             <i class="fas fa-eraser"></i>
                             <span>Clear</span>
                         </button>
-                        <button id="filterButton" 
-                            onclick="toggleFilterPanel()" 
-                            class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                            title="Filtrer les messages">
-                            <i class="fas fa-filter"></i>
-                        </button>
                         <span id="ws-status" class="px-2 py-1 rounded text-sm font-semibold">Déconnecté</span>
                     </div>
                 </div>
@@ -406,6 +400,27 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="flex-1 flex items-center gap-4 mt-4 pt-4 border-t border-gray-200">
+                                <div class="flex-1">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Type de message</label>
+                                    <div class="relative">
+                                        <select id="typeFilter" class="w-full pl-9 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white appearance-none" onchange="applyFilters()">
+                                            <option value="all" data-icon="fas fa-filter">Tous les types</option>
+                                            <option value="add_product" data-icon="fas fa-carrot" class="text-yellow-500">Ingrédients</option>
+                                            <option value="activeTask" data-icon="fas fa-tasks" class="text-blue-500">Tâches</option>
+                                            <option value="unactiveTask" data-icon="fas fa-power-off" class="text-red-500">Désactivation</option>
+                                            <option value="startGame" data-icon="fas fa-play" class="text-purple-500">Start Game</option>
+                                            <option value="taskProgress" data-icon="fas fa-chart-line" class="text-green-500">Progression</option>
+                                        </select>
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                            <i id="typeIcon" class="fas fa-filter"></i>
+                                        </div>
+                                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="flex justify-end mt-3">
                                 <span id="messageCount" class="text-sm text-gray-500">0 messages</span>
                             </div>
@@ -446,7 +461,6 @@
             ws = new WebSocket('wss://websocket.chhilif.com/ws');
             
             ws.onopen = () => {
-                log('Connected to WebSocket server');
                 updateStatus('Connected', 'text-green-600');
             };
             
@@ -478,12 +492,10 @@
             };
             
             ws.onerror = (error) => {
-                log('WebSocket Error: ' + error);
                 updateStatus('Error', 'text-red-600');
             };
             
             ws.onclose = () => {
-                log('Disconnected from WebSocket server');
                 updateStatus('Disconnected', 'text-red-600');
                 setTimeout(connect, 1000);
             };
@@ -1136,11 +1148,6 @@
         }
 
         // Ajouter ces nouvelles fonctions
-        function toggleFilterPanel() {
-            const panel = document.getElementById('filterPanel');
-            panel.classList.toggle('hidden');
-        }
-
         function updateFilters(button) {
             button.classList.toggle('active');
             updateActiveFilters();
@@ -1202,6 +1209,7 @@
         function applyFilters() {
             const fromFilter = document.getElementById('fromFilter').value;
             const toFilter = document.getElementById('toFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
             
             const logEntries = document.querySelectorAll('#log > div');
             let visibleCount = 0;
@@ -1213,23 +1221,31 @@
                     
                     let isVisible = true;
                     
-                    if (fromFilter !== 'all') {
-                        if (fromFilter === 'watch') {
-                            isVisible = data.from && data.from !== 'table' && data.from !== 'angular';
-                        } else if (fromFilter === 'unity') {
-                            isVisible = data.from === 'table';
-                        } else if (fromFilter === 'angular') {
-                            isVisible = data.from === 'angular';
-                        }
+                    // Vérifier le type de message
+                    if (typeFilter !== 'all') {
+                        isVisible = data.type === typeFilter;
                     }
                     
-                    if (isVisible && toFilter !== 'all') {
-                        if (toFilter === 'watch') {
-                            isVisible = data.to && data.to !== 'table' && data.to !== 'angular';
-                        } else if (toFilter === 'unity') {
-                            isVisible = data.to === 'table';
-                        } else if (toFilter === 'angular') {
-                            isVisible = data.to === 'angular';
+                    // Si le type correspond, vérifier les filtres from/to
+                    if (isVisible) {
+                        if (fromFilter !== 'all') {
+                            if (fromFilter === 'watch') {
+                                isVisible = data.from && data.from !== 'table' && data.from !== 'angular';
+                            } else if (fromFilter === 'unity') {
+                                isVisible = data.from === 'table';
+                            } else if (fromFilter === 'angular') {
+                                isVisible = data.from === 'angular';
+                            }
+                        }
+                        
+                        if (isVisible && toFilter !== 'all') {
+                            if (toFilter === 'watch') {
+                                isVisible = data.to && data.to !== 'table' && data.to !== 'angular';
+                            } else if (toFilter === 'unity') {
+                                isVisible = data.to === 'table';
+                            } else if (toFilter === 'angular') {
+                                isVisible = data.to === 'angular';
+                            }
                         }
                     }
                     
@@ -1244,6 +1260,7 @@
             
             document.getElementById('messageCount').textContent = `${visibleCount}/${logEntries.length} messages`;
             updateFilterIcons();
+            updateTypeIcon();
         }
 
         function addNewWatchFilter(watchId) {
@@ -1493,6 +1510,25 @@
             setTimeout(() => {
                 button.style.transform = 'scale(1) rotate(180deg)';
             }, 200);
+        }
+
+        // Ajouter la fonction pour mettre à jour l'icône du type
+        function updateTypeIcon() {
+            const select = document.getElementById('typeFilter');
+            const icon = document.getElementById('typeIcon');
+            const selectedOption = select.options[select.selectedIndex];
+            const iconClass = selectedOption.getAttribute('data-icon');
+            
+            const iconColors = {
+                'all': 'text-gray-400',
+                'add_product': 'text-yellow-500',
+                'activeTask': 'text-blue-500',
+                'unactiveTask': 'text-red-500',
+                'startGame': 'text-purple-500',
+                'taskProgress': 'text-green-500'
+            };
+            
+            icon.className = `${iconClass} ${iconColors[select.value]}`;
         }
     </script>
 </body>
