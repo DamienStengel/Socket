@@ -76,9 +76,9 @@
                 </div>
 
                 <div class="space-y-2">
-                    <textarea id="message" 
-                        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                        placeholder="Enter your message here..."></textarea>
+                    <div id="message-container" class="relative w-full">
+                        <pre id="message" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm overflow-y-auto" contenteditable="true" spellcheck="false" style="min-height: 100px; max-height: 60vh;"><code class="hljs language-json"></code></pre>
+                    </div>
                     
                     <span id="socketType" class="hidden px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm font-medium inline-flex items-center">
                         <i class="fas fa-plug mr-2"></i>
@@ -174,7 +174,7 @@
                             <select id="workstation" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
                                 <option value="grill">Grill</option>
                                 <option value="cutting_board">Cutting Board</option>
-                                <option value="sink">Sink</option>
+                                <option value="evier">Évier</option>
                             </select>
                         </div>
 
@@ -381,7 +381,7 @@
         },
         "taskId": "2",
         "quantity": "1",
-        "workstation": "sink"
+        "workstation": "evier"
     }
 }`);
             updateSocketName('Wash Task');
@@ -448,90 +448,83 @@
             let direction = '';
             let borderColor = 'border-gray-500';
             let messageDescription = '';
+            let jsonData = null;
             
             try {
-                if (message.startsWith('Sent:') || message.startsWith('Received:')) {
-                    const isReceived = message.startsWith('Received:');
-                    const jsonStr = message.substring(message.indexOf('{'));
-                    const data = JSON.parse(jsonStr);
+                // Extraire et parser le JSON, qu'il soit envoyé ou reçu
+                const jsonStr = message.startsWith('Sent:') || message.startsWith('Received:')
+                    ? message.substring(message.indexOf('{'))
+                    : message;
+                jsonData = JSON.parse(jsonStr);
+                
+                // Déterminer la couleur et le type selon le type de message
+                switch(jsonData.type) {
+                    case 'add_product':
+                        borderColor = 'border-yellow-500';
+                        typeLabel = '<span class="text-yellow-600 font-semibold">[Ingrédient]</span>';
+                        messageDescription = `${jsonData.product.icon} ${jsonData.product.name}`;
+                        break;
+                    case 'activeTask':
+                        borderColor = 'border-blue-500';
+                        typeLabel = '<span class="text-blue-600 font-semibold">[Tâche]</span>';
+                        const workstation = {
+                            'grill': '🔥 Cuisson',
+                            'cutting_board': '🔪 Découpe',
+                            'sink': '💧 Lavage'
+                        }[jsonData.assignedTask.workstation] || jsonData.assignedTask.workstation;
+                        messageDescription = `${workstation} × ${jsonData.assignedTask.quantity} pour ${jsonData.assignedTask.cook.name}`;
+                        break;
+                    case 'unactiveTask':
+                        borderColor = 'border-red-500';
+                        typeLabel = '<span class="text-red-600 font-semibold">[Désactivation]</span>';
+                        messageDescription = 'Arrêt de la tâche';
+                        break;
+                    case 'startGame':
+                        borderColor = 'border-purple-500';
+                        typeLabel = '<span class="text-purple-600 font-semibold">[Start Game]</span>';
+                        messageDescription = 'Démarrage de la partie';
+                        break;
+                    case 'taskProgress':
+                        borderColor = 'border-green-500';
+                        typeLabel = '<span class="text-green-600 font-semibold">[Progression]</span>';
+                        messageDescription = `${jsonData.progressData.taskName}: ${jsonData.progressData.currentProgress}/${jsonData.progressData.targetProgress}`;
+                        break;
+                }
+                
+                // Déterminer les icônes de direction
+                if (jsonData.from && jsonData.to) {
+                    const deviceIcons = {
+                        'table': '<i class="fas fa-gamepad text-purple-500"></i>',
+                        'angular': '<i class="fas fa-tablet-alt text-red-500"></i>'
+                    };
                     
-                    // Déterminer la couleur et le type selon le type de message
-                    switch(data.type) {
-                        case 'add_product':
-                            borderColor = 'border-yellow-500';
-                            typeLabel = '<span class="text-yellow-600 font-semibold">[Ingrédient]</span>';
-                            messageDescription = `${data.product.icon} ${data.product.name}`;
-                            break;
-                        case 'activeTask':
-                            borderColor = 'border-blue-500';
-                            typeLabel = '<span class="text-blue-600 font-semibold">[Tâche]</span>';
-                            const workstation = {
-                                'grill': '🔥 Cuisson',
-                                'cutting_board': '🔪 Découpe',
-                                'sink': '💧 Lavage'
-                            }[data.assignedTask.workstation] || data.assignedTask.workstation;
-                            messageDescription = `${workstation} × ${data.assignedTask.quantity} pour ${data.assignedTask.cook.name}`;
-                            break;
-                        case 'unactiveTask':
-                            borderColor = 'border-red-500';
-                            typeLabel = '<span class="text-red-600 font-semibold">[Désactivation]</span>';
-                            messageDescription = 'Arrêt de la tâche';
-                            break;
-                        case 'startGame':
-                            borderColor = 'border-purple-500';
-                            typeLabel = '<span class="text-purple-600 font-semibold">[Start Game]</span>';
-                            messageDescription = 'Démarrage de la partie';
-                            break;
-                        case 'taskProgress':
-                            borderColor = 'border-green-500';
-                            typeLabel = '<span class="text-green-600 font-semibold">[Progression]</span>';
-                            messageDescription = `${data.progressData.taskName}: ${data.progressData.currentProgress}/${data.progressData.targetProgress}`;
-                            break;
-                    }
+                    const getDeviceName = (id) => {
+                        if (id === 'table') return 'Unity';
+                        if (id === 'angular') return 'Tablette';
+                        return id.includes('SM-R870') ? `Montre ${id.split('-').pop().slice(0, 4)}...` : id;
+                    };
                     
-                    // Déterminer les icônes de direction
-                    if (data.from && data.to) {
-                        const deviceIcons = {
-                            'table': '<i class="fas fa-gamepad text-purple-500"></i>',
-                            'angular': '<i class="fas fa-tablet-alt text-red-500"></i>'
-                        };
-                        
-                        const getDeviceName = (id) => {
-                            if (id === 'table') return 'Unity';
-                            if (id === 'angular') return 'Tablette';
-                            return id.includes('SM-R870') ? `Montre ${id.split('-').pop().slice(0, 4)}...` : id;
-                        };
-                        
-                        const fromIcon = data.from === 'table' || data.from === 'angular' 
-                            ? deviceIcons[data.from] 
-                            : '<i class="fas fa-watch text-blue-500"></i>';
-                        
-                        const toIcon = data.to === 'table' || data.to === 'angular'
-                            ? deviceIcons[data.to]
-                            : '<i class="fas fa-watch text-blue-500"></i>';
-                        
-                        direction = `
-                            <div class="flex items-center gap-2 text-sm">
-                                <span class="flex items-center gap-1">
-                                    ${fromIcon}
-                                    <span class="text-xs text-gray-600">${getDeviceName(data.from)}</span>
-                                </span>
-                                <i class="fas fa-arrow-right text-gray-400"></i>
-                                <span class="flex items-center gap-1">
-                                    ${toIcon}
-                                    <span class="text-xs text-gray-600">${getDeviceName(data.to)}</span>
-                                </span>
-                            </div>
-                        `;
-                        
-                        if (data.from !== 'table' && data.from !== 'angular' && !knownWatches.has(data.from)) {
-                            knownWatches.add(data.from);
-                            addNewWatchFilter(data.from);
-                        }
-                    }
-                } else {
-                    typeLabel = '<span class="text-gray-600 font-semibold">[System]</span>';
-                    messageDescription = message;
+                    const fromIcon = jsonData.from === 'table' || jsonData.from === 'angular' 
+                        ? deviceIcons[jsonData.from] 
+                        : '<i class="fas fa-watch text-blue-500"></i>';
+                    
+                    const toIcon = jsonData.to === 'table' || jsonData.to === 'angular'
+                        ? deviceIcons[jsonData.to]
+                        : '<i class="fas fa-watch text-blue-500"></i>';
+                    
+                    direction = `
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="flex items-center gap-1">
+                                ${fromIcon}
+                                <span class="text-xs text-gray-600">${getDeviceName(jsonData.from)}</span>
+                            </span>
+                            <i class="fas fa-arrow-right text-gray-400"></i>
+                            <span class="flex items-center gap-1">
+                                ${toIcon}
+                                <span class="text-xs text-gray-600">${getDeviceName(jsonData.to)}</span>
+                            </span>
+                        </div>
+                    `;
                 }
             } catch (e) {
                 typeLabel = '<span class="text-gray-600 font-semibold">[System]</span>';
@@ -540,7 +533,6 @@
             
             logEntry.classList.add('border-l-4', borderColor);
             
-            // Modifier la partie HTML du log
             logEntry.innerHTML = `
                 <div class="group cursor-pointer" onclick="toggleJsonView(this)">
                     <div class="flex items-center justify-between mb-1">
@@ -552,7 +544,7 @@
                         <i class="fas fa-chevron-down text-gray-400 group-hover:text-gray-600 transition-transform duration-200"></i>
                     </div>
                     <div class="text-sm font-medium text-gray-700 mb-1">${messageDescription}</div>
-                    <div class="mt-1 text-sm font-mono break-words hidden bg-gray-50 p-2 rounded overflow-x-auto">
+                    <div class="mt-1 text-sm font-mono break-all hidden bg-gray-50 p-2 rounded">
                         <pre class="whitespace-pre"><code class="hljs language-json">${formatJsonString(message)}</code></pre>
                     </div>
                 </div>
@@ -863,13 +855,28 @@
         }
 
         function updateMessageContent(content) {
-            const textarea = document.getElementById('message');
-            textarea.value = content;
-            adjustTextareaHeight();
+            const messageElement = document.querySelector('#message code');
+            try {
+                const jsonObj = JSON.parse(content);
+                const formattedJson = JSON.stringify(jsonObj, null, 2);
+                const highlighted = hljs.highlight(formattedJson, {language: 'json'}).value;
+                messageElement.innerHTML = highlighted;
+            } catch (e) {
+                messageElement.textContent = content;
+            }
         }
 
         function getMessageContent() {
-            return document.getElementById('message').value;
+            const messageElement = document.querySelector('#message code');
+            try {
+                // Nettoyer le HTML de la coloration syntaxique pour obtenir le JSON pur
+                const textContent = messageElement.textContent;
+                // Valider que c'est du JSON valide
+                JSON.parse(textContent);
+                return textContent;
+            } catch (e) {
+                return messageElement.textContent;
+            }
         }
 
         // Ajouter ces nouvelles fonctions
@@ -1004,6 +1011,46 @@
                 return jsonString; // Retourner le texte original en cas d'erreur
             }
         }
+
+        // Modifier la sélection de workstation dans le HTML
+        function updateWorkstationOptions() {
+            const workstationSelect = document.getElementById('workstation');
+            workstationSelect.innerHTML = `
+                <option value="grill">Grill</option>
+                <option value="cutting_board">Cutting Board</option>
+                <option value="evier">Évier</option>
+            `;
+        }
+
+        // Ajouter l'initialisation de la coloration syntaxique
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... code existant ...
+            
+            // Initialiser la coloration syntaxique
+            const messageElement = document.querySelector('#message');
+            messageElement.addEventListener('input', () => {
+                const codeElement = messageElement.querySelector('code');
+                try {
+                    const content = codeElement.textContent;
+                    const jsonObj = JSON.parse(content);
+                    const formattedJson = JSON.stringify(jsonObj, null, 2);
+                    const highlighted = hljs.highlight(formattedJson, {language: 'json'}).value;
+                    codeElement.innerHTML = highlighted;
+                    
+                    // Maintenir le curseur à la bonne position
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(codeElement);
+                    range.collapse(false);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } catch (e) {
+                    // Si ce n'est pas du JSON valide, ne pas formater
+                }
+            });
+            
+            updateWorkstationOptions();
+        });
     </script>
 </body>
 </html>
