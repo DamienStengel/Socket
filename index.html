@@ -91,116 +91,73 @@
                     <button onclick="switchTab('tasks')" id="tasksTab" class="px-4 py-2 border-b-2 border-transparent hover:text-blue-600 hover:border-blue-600 transition-colors">
                         <i class="fas fa-tasks mr-2"></i>Tâches
                     </button>
-                    <button onclick="switchTab('ingredients')" id="ingredientsTab" class="px-4 py-2 border-b-2 border-transparent hover:text-blue-600 hover:border-blue-600 transition-colors">
-                        <i class="fas fa-carrot mr-2"></i>Ingrédients
-                    </button>
                     <button onclick="switchTab('createTask')" id="createTaskTab" class="px-4 py-2 border-b-2 border-transparent hover:text-blue-600 hover:border-blue-600 transition-colors">
                         <i class="fas fa-plus-circle mr-2"></i>Créer Tâche
                     </button>
                 </div>
 
                 <!-- Contenu des tabs -->
-                <div id="tasksContent" class="grid grid-cols-2 gap-2 p-2">
-                    <button onclick="loadCookTask()" class="flex items-center p-2 hover:bg-green-50 rounded transition-colors">
-                        <i class="fas fa-utensils mr-2 text-green-500"></i>Cook
-                    </button>
-                    <button onclick="loadWashTask()" class="flex items-center p-2 hover:bg-green-50 rounded transition-colors">
-                        <i class="fas fa-sink mr-2 text-green-500"></i>Wash
-                    </button>
-                    <button onclick="loadCutTask()" class="flex items-center p-2 hover:bg-green-50 rounded transition-colors">
-                        <i class="fas fa-cut mr-2 text-green-500"></i>Cut
-                    </button>
-                    <button onclick="loadUnactiveTask()" class="flex items-center p-2 hover:bg-red-50 rounded transition-colors">
-                        <i class="fas fa-power-off mr-2 text-red-500"></i>Stop
-                    </button>
-                    <button onclick="loadTaskProgress()" class="flex items-center p-2 hover:bg-purple-50 rounded transition-colors">
-                        <i class="fas fa-chart-line mr-2 text-purple-500"></i>Progress
-                    </button>
-                </div>
-
-                <div id="ingredientsContent" class="hidden grid grid-cols-3 gap-2 p-2">
-                    <button onclick="sendIngredient('Tomate', 1, '🍅')" class="flex items-center justify-center p-3 hover:bg-red-50 rounded transition-colors transform hover:scale-105">
-                        <span class="text-3xl">🍅</span>
-                    </button>
-                    <button onclick="sendIngredient('Laitue', 2, '🥬')" class="flex items-center justify-center p-3 hover:bg-green-50 rounded transition-colors transform hover:scale-105">
-                        <span class="text-3xl">🥬</span>
-                    </button>
-                    <button onclick="sendIngredient('Viande', 3, '🥩')" class="flex items-center justify-center p-3 hover:bg-red-50 rounded transition-colors transform hover:scale-105">
-                        <span class="text-3xl">🥩</span>
-                    </button>
-                    <button onclick="sendIngredient('Pain', 4, '🫓')" class="flex items-center justify-center p-3 hover:bg-yellow-50 rounded transition-colors transform hover:scale-105">
-                        <span class="text-3xl">🫓</span>
-                    </button>
-                    <button onclick="sendIngredient('Fromage', 5, '🧀')" class="flex items-center justify-center p-3 hover:bg-yellow-50 rounded transition-colors transform hover:scale-105">
-                        <span class="text-3xl">🧀</span>
-                    </button>
-                </div>
-
-                <div id="createTaskContent" class="hidden p-4 space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <!-- Sélection du joueur -->
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Joueur</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button onclick="selectPlayer('Player1', '#FF6B6B')" class="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-colors">
-                                    <div class="w-8 h-8 rounded-full bg-red-500 mx-auto mb-1"></div>
-                                    Player 1
-                                </button>
-                                <button onclick="selectPlayer('Player2', '#4169E1')" class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors">
-                                    <div class="w-8 h-8 rounded-full bg-blue-500 mx-auto mb-1"></div>
-                                    Player 2
-                                </button>
-                                <button onclick="selectPlayer('Player3', '#FFD93D')" class="p-2 rounded-lg bg-yellow-100 hover:bg-yellow-200 transition-colors">
-                                    <div class="w-8 h-8 rounded-full bg-yellow-500 mx-auto mb-1"></div>
-                                    Player 3
-                                </button>
-                                <button onclick="selectPlayer('Player4', '#95E1D3')" class="p-2 rounded-lg bg-green-100 hover:bg-green-200 transition-colors">
-                                    <div class="w-8 h-8 rounded-full bg-green-500 mx-auto mb-1"></div>
-                                    Player 4
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Sélection de la quantité -->
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Quantité</label>
-                            <input type="number" id="taskQuantity" min="1" max="5" value="1" 
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-
-                        <!-- Sélection de la workstation -->
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Workstation</label>
-                            <select id="workstation" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                                <option value="grill">Grill</option>
-                                <option value="cutting_board">Cutting Board</option>
-                                <option value="evier">Évier</option>
-                            </select>
-                        </div>
-
-                        <!-- Sélection de l'ingrédient -->
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Ingrédient</label>
-                            <select id="ingredient" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                                <option value="1">Tomate 🍅</option>
-                                <option value="2">Laitue 🥬</option>
-                                <option value="3">Viande 🥩</option>
-                                <option value="4">Pain 🫓</option>
-                                <option value="5">Fromage 🧀</option>
-                            </select>
+                <div id="tasksContent" class="p-4 space-y-8">
+                    <!-- Tâches préformatées -->
+                    <div class="space-y-2">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Tâches rapides</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="loadCookTask()" class="flex items-center justify-center p-3 bg-white hover:bg-green-50 rounded-lg border border-gray-200 transition-all hover:shadow-md">
+                                <i class="fas fa-utensils mr-2 text-green-500 text-lg"></i>
+                                <span class="font-medium">Cuisson</span>
+                            </button>
+                            <button onclick="loadWashTask()" class="flex items-center justify-center p-3 bg-white hover:bg-green-50 rounded-lg border border-gray-200 transition-all hover:shadow-md">
+                                <i class="fas fa-sink mr-2 text-green-500 text-lg"></i>
+                                <span class="font-medium">Lavage</span>
+                            </button>
+                            <button onclick="loadCutTask()" class="flex items-center justify-center p-3 bg-white hover:bg-green-50 rounded-lg border border-gray-200 transition-all hover:shadow-md">
+                                <i class="fas fa-cut mr-2 text-green-500 text-lg"></i>
+                                <span class="font-medium">Découpe</span>
+                            </button>
+                            <button onclick="loadTaskProgress()" class="flex items-center justify-center p-3 bg-white hover:bg-purple-50 rounded-lg border border-gray-200 transition-all hover:shadow-md">
+                                <i class="fas fa-chart-line mr-2 text-purple-500 text-lg"></i>
+                                <span class="font-medium">Progression</span>
+                            </button>
+                            <button onclick="loadUnactiveTask()" class="flex items-center justify-center p-3 bg-white hover:bg-red-50 rounded-lg border border-gray-200 transition-all hover:shadow-md col-span-2">
+                                <i class="fas fa-power-off mr-2 text-red-500 text-lg"></i>
+                                <span class="font-medium">Arrêter la tâche</span>
+                            </button>
                         </div>
                     </div>
 
-                    <button onclick="createCustomTask()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                        <i class="fas fa-plus mr-2"></i>Créer la tâche
-                    </button>
+                    <!-- Grille d'ingrédients -->
+                    <div class="space-y-2">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Ingrédients disponibles</h3>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button onclick="sendIngredient('Tomate', 1, '🍅')" class="aspect-square flex items-center justify-center p-4 bg-white hover:bg-red-50 rounded-lg border border-gray-200 transition-all hover:shadow-md">
+                                <span class="text-4xl">🍅</span>
+                            </button>
+                            <button onclick="sendIngredient('Laitue', 2, '🥬')" class="aspect-square flex items-center justify-center p-4 bg-white hover:bg-green-50 rounded-lg border border-gray-200 transition-all hover:shadow-md">
+                                <span class="text-4xl">🥬</span>
+                            </button>
+                            <button onclick="sendIngredient('Viande', 3, '🥩')" class="aspect-square flex items-center justify-center p-4 bg-white hover:bg-red-50 rounded-lg border border-gray-200 transition-all hover:shadow-md">
+                                <span class="text-4xl">🥩</span>
+                            </button>
+                            <button onclick="sendIngredient('Pain', 4, '🫓')" class="aspect-square flex items-center justify-center p-4 bg-white hover:bg-yellow-50 rounded-lg border border-gray-200 transition-all hover:shadow-md">
+                                <span class="text-4xl">🫓</span>
+                            </button>
+                            <button onclick="sendIngredient('Fromage', 5, '🧀')" class="aspect-square flex items-center justify-center p-4 bg-white hover:bg-yellow-50 rounded-lg border border-gray-200 transition-all hover:shadow-md">
+                                <span class="text-4xl">🧀</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bouton Start Game -->
+                    <div class="pt-4">
+                        <button onclick="startGameNow()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-6 py-4 rounded-lg transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] text-lg">
+                            <i class="fas fa-play mr-2"></i>Démarrer la partie
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Ajouter le bouton Start Game ici -->
-                <div class="mt-4 p-2">
-                    <button onclick="startGameNow()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-6 py-3 rounded-lg transition duration-300 shadow-lg transform hover:scale-105 text-lg">
-                        <i class="fas fa-play mr-2"></i>Start Game
-                    </button>
+                <!-- Tab Créer une tâche -->
+                <div id="createTaskContent" class="hidden p-4 space-y-4">
+                    <!-- Contenu existant de createTaskContent -->
                 </div>
             </section>
             
@@ -636,29 +593,20 @@
         let selectedPlayer = null;
         let selectedPlayerColor = null;
 
-        function switchTab(tab) {
-            const tasksContent = document.getElementById('tasksContent');
-            const ingredientsContent = document.getElementById('ingredientsContent');
-            const createTaskContent = document.getElementById('createTaskContent');
-            const tasksTab = document.getElementById('tasksTab');
-            const ingredientsTab = document.getElementById('ingredientsTab');
-            const createTaskTab = document.getElementById('createTaskTab');
-
+        function switchTab(tabName) {
+            // Cacher tous les contenus
+            document.getElementById('quickActionsContent').classList.add('hidden');
+            document.getElementById('tasksContent').classList.add('hidden');
+            document.getElementById('createTaskContent').classList.add('hidden');
+            
             // Réinitialiser tous les tabs
-            [tasksContent, ingredientsContent, createTaskContent].forEach(content => content.classList.add('hidden'));
-            [tasksTab, ingredientsTab, createTaskTab].forEach(tab => tab.classList.remove('text-blue-600', 'border-blue-600'));
-
-            // Activer le tab sélectionné
-            if (tab === 'tasks') {
-                tasksContent.classList.remove('hidden');
-                tasksTab.classList.add('text-blue-600', 'border-blue-600');
-            } else if (tab === 'ingredients') {
-                ingredientsContent.classList.remove('hidden');
-                ingredientsTab.classList.add('text-blue-600', 'border-blue-600');
-            } else if (tab === 'createTask') {
-                createTaskContent.classList.remove('hidden');
-                createTaskTab.classList.add('text-blue-600', 'border-blue-600');
-            }
+            document.getElementById('quickActionsTab').classList.remove('text-blue-600', 'border-blue-600');
+            document.getElementById('tasksTab').classList.remove('text-blue-600', 'border-blue-600');
+            document.getElementById('createTaskTab').classList.remove('text-blue-600', 'border-blue-600');
+            
+            // Afficher le contenu sélectionné
+            document.getElementById(tabName + 'Content').classList.remove('hidden');
+            document.getElementById(tabName + 'Tab').classList.add('text-blue-600', 'border-blue-600');
         }
 
         function selectPlayer(playerName, color) {
@@ -721,7 +669,7 @@
             // Ajuster la hauteur lors du redimensionnement de la fenêtre
             window.addEventListener('resize', adjustTextareaHeight);
             
-            switchTab('tasks');
+            switchTab('quickActions');
         });
 
         function startGameNow() {
